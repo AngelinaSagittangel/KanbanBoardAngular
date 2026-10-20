@@ -1,0 +1,200 @@
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum BoardRole {
+  ADMIN
+  MEMBER
+}
+
+enum BoardInvitationStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+}
+
+enum NotificationType {
+  CARD_ASSIGNED
+  CARD_UNASSIGNED
+  BOARD_MEMBER_REMOVED
+  BOARD_MEMBER_LEFT
+}
+
+enum CardActivityType {
+  CARD_CREATED
+  CARD_DELETED
+  CARD_UPDATED
+  CARD_MOVED
+  CARD_COMPLETED
+  CARD_ASSIGNED
+  CARD_UNASSIGNED
+  CHECKLIST_UPDATED
+  COMMENT_ADDED
+  COMMENT_UPDATED
+  COMMENT_DELETED
+}
+
+model User {
+  id           String @id @default(uuid())
+  name         String
+  email        String @unique
+  passwordHash String
+
+  ownedBoards         Board[]           @relation("BoardOwner")
+  notifications       Notification[]
+  memberships         BoardMember[]
+  assignedCards       Card[]            @relation("CardAssignee")
+  comments            Comment[]
+  sentInvitations     BoardInvitation[] @relation("InvitationSender")
+  receivedInvitations BoardInvitation[] @relation("InvitationRecipient")
+  cardActivities      CardActivity[]    @relation("CardActivityActor")
+}
+
+model Board {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  ownerId     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  owner       User              @relation("BoardOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members     BoardMember[]
+  columns     Column[]
+  invitations BoardInvitation[]
+  activities  CardActivity[]
+
+  @@index([ownerId])
+}
+
+model BoardMember {
+  id       String    @id @default(uuid())
+  boardId  String
+  userId   String
+  role     BoardRole @default(MEMBER)
+  joinedAt DateTime  @default(now())
+
+  board Board @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([boardId, userId])
+  @@index([userId])
+}
+
+model Column {
+  id        String   @id @default(uuid())
+  title     String
+  order     Int
+  color     String   @default("gray")
+  note      String?  @db.Text
+  boardId   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  board Board  @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  cards Card[]
+
+  @@unique([boardId, order])
+}
+
+model Card {
+  id          String    @id @default(uuid())
+  title       String
+  description String?
+  completed   Boolean   @default(false)
+  label       String?
+  labelColor  String?
+  checklist   Json?
+  order       Int
+  columnId    String
+  assigneeId  String?
+  dueDate     DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  column     Column         @relation(fields: [columnId], references: [id], onDelete: Cascade)
+  assignee   User?          @relation("CardAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  comments   Comment[]
+  activities CardActivity[]
+
+  @@index([columnId, order])
+  @@index([assigneeId])
+}
+
+model Comment {
+  id        String   @id @default(uuid())
+  content   String
+  cardId    String
+  authorId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  card   Card @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([cardId, createdAt])
+}
+
+model CardActivity {
+  id        String           @id @default(uuid())
+  boardId   String
+  cardId    String?
+  actorId   String?
+  actorName String
+  type      CardActivityType
+  details   Json?
+  createdAt DateTime         @default(now())
+
+  board Board @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  card  Card? @relation(fields: [cardId], references: [id], onDelete: SetNull)
+  actor User? @relation("CardActivityActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([cardId, createdAt])
+  @@index([boardId, createdAt])
+}
+
+model BoardInvitation {
+  id              String               @id @default(uuid())
+  boardId         String
+  email           String
+  invitedById     String
+  recipientUserId String
+  status          BoardInvitationStatus @default(PENDING)
+  createdAt       DateTime              @default(now())
+  respondedAt     DateTime?
+
+  board     Board @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  invitedBy User  @relation("InvitationSender", fields: [invitedById], references: [id], onDelete: Cascade)
+  recipient User  @relation("InvitationRecipient", fields: [recipientUserId], references: [id], onDelete: Cascade)
+
+  @@unique([boardId, recipientUserId])
+  @@index([recipientUserId, status])
+  @@index([invitedById])
+}
+
+model Notification {
+  id          String           @id @default(uuid())
+  recipientId String
+  type        NotificationType
+
+  actorName   String
+  boardId     String
+  boardTitle  String
+  cardId      String?
+  cardTitle   String?
+  message     String
+
+  readAt      DateTime?
+  createdAt   DateTime         @default(now())
+
+  recipient User @relation(fields: [recipientId], references: [id], onDelete: Cascade)
+
+  @@index([recipientId, readAt, createdAt])
+  @@index([recipientId, createdAt])
+}
