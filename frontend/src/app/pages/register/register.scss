@@ -1,0 +1,25 @@
+@use '../login/login';
+
+.auth-page {
+  .auth-card {
+    form {
+      input.auth-input--error {
+        border-color: #dc2626;
+        box-shadow: 0 0 0 1px rgba(220, 38, 38, 0.12);
+
+        &:focus {
+          border-color: #dc2626;
+          box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.12);
+          outline: none;
+        }
+      }
+
+      .auth-field-error {
+        margin: 6px 0 12px;
+        color: #dc2626;
+        font-size: 12px;
+        line-height: 1.5;
+      }
+    }
+  }
+}

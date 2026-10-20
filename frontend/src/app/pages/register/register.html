@@ -1,0 +1,140 @@
+<main class="auth-page">
+  <section class="auth-card">
+    <a class="auth-logo" routerLink="/">Kanban</a>
+
+    <h1>Создать аккаунт</h1>
+    <p class="auth-subtitle">
+      Зарегистрируйтесь, чтобы организовать свои задачи.
+    </p>
+
+    <form
+      (ngSubmit)="submit(registerForm)"
+      #registerForm="ngForm"
+      novalidate
+    >
+      <label for="name">Имя</label>
+      <input
+        id="name"
+        type="text"
+        name="name"
+        [(ngModel)]="name"
+        (ngModelChange)="clearFieldError('name')"
+        #nameModel="ngModel"
+        required
+        maxlength="100"
+        autocomplete="name"
+        placeholder="Как к вам обращаться"
+        [class.auth-input--error]="
+          !!fieldErrors().name ||
+          (nameModel.invalid && (nameModel.touched || nameModel.dirty))
+        "
+        [attr.aria-invalid]="
+          !!fieldErrors().name ||
+          (nameModel.invalid && (nameModel.touched || nameModel.dirty))
+        "
+      />
+
+      @if (fieldErrors().name) {
+        <p class="auth-field-error">{{ fieldErrors().name }}</p>
+      } @else if (nameModel.invalid && (nameModel.touched || nameModel.dirty)) {
+        <p class="auth-field-error">
+          @if (nameModel.errors?.['required']) {
+            Введите имя.
+          } @else if (nameModel.errors?.['maxlength']) {
+            Имя не должно превышать 100 символов.
+          }
+        </p>
+      }
+
+      <label for="email">Email</label>
+      <input
+        id="email"
+        type="email"
+        name="email"
+        [(ngModel)]="email"
+        (ngModelChange)="clearFieldError('email')"
+        #emailModel="ngModel"
+        required
+        email
+        autocomplete="email"
+        placeholder="you@example.com"
+        [class.auth-input--error]="
+          !!fieldErrors().email ||
+          (emailModel.invalid && (emailModel.touched || emailModel.dirty))
+        "
+        [attr.aria-invalid]="
+          !!fieldErrors().email ||
+          (emailModel.invalid && (emailModel.touched || emailModel.dirty))
+        "
+      />
+
+      @if (fieldErrors().email) {
+        <p class="auth-field-error">{{ fieldErrors().email }}</p>
+      } @else if (emailModel.invalid && (emailModel.touched || emailModel.dirty)) {
+        <p class="auth-field-error">
+          @if (emailModel.errors?.['required']) {
+            Введите email.
+          } @else if (emailModel.errors?.['email']) {
+            Введите корректный email.
+          }
+        </p>
+      }
+
+      <label for="password">Пароль</label>
+      <input
+        id="password"
+        type="password"
+        name="password"
+        [(ngModel)]="password"
+        (ngModelChange)="clearFieldError('password')"
+        #passwordModel="ngModel"
+        required
+        minlength="8"
+        autocomplete="new-password"
+        placeholder="Минимум 8 символов"
+        [class.auth-input--error]="
+          !!fieldErrors().password ||
+          (
+            passwordModel.invalid &&
+            (passwordModel.touched || passwordModel.dirty)
+          )
+        "
+        [attr.aria-invalid]="
+          !!fieldErrors().password ||
+          (
+            passwordModel.invalid &&
+            (passwordModel.touched || passwordModel.dirty)
+          )
+        "
+      />
+
+      @if (fieldErrors().password) {
+        <p class="auth-field-error">{{ fieldErrors().password }}</p>
+      } @else if (passwordModel.invalid &&
+      (passwordModel.touched || passwordModel.dirty)) {
+        <p class="auth-field-error">
+          @if (passwordModel.errors?.['required']) {
+            Введите пароль.
+          } @else if (passwordModel.errors?.['minlength']) {
+            Пароль должен содержать минимум 8 символов.
+          }
+        </p>
+      }
+
+      @if (errorMessage()) {
+        <p class="auth-error" role="alert">
+          {{ errorMessage() }}
+        </p>
+      }
+
+      <button type="submit" [disabled]="isLoading()">
+        {{ isLoading() ? 'Создаём аккаунт…' : 'Зарегистрироваться' }}
+      </button>
+    </form>
+
+    <p class="auth-footer">
+      Уже есть аккаунт?
+      <a routerLink="/login">Войти</a>
+    </p>
+  </section>
+</main>

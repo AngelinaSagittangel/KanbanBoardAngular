@@ -1,0 +1,176 @@
+<article
+  class="kanban__card"
+  draggable="true"
+  (dragstart)="onDragStart($event)"
+  [class.kanban__card--completed]="card().completed"
+  [class.kanban__card--collapsed]="hasExtraInfo() && !isExpanded()"
+  [class.kanban__card--editing]="isEditing()"
+  [attr.data-card-id]="card().id"
+>
+  <div class="kanban__card-main">
+    <div class="kanban__card-heading">
+      <button
+        class="kanban__complete"
+        [class.kanban__complete--done]="card().completed"
+        type="button"
+        [attr.aria-label]="card().completed
+          ? 'Отметить задачу невыполненной'
+          : 'Отметить задачу выполненной'"
+        [title]="card().completed
+          ? 'Отметить задачу невыполненной'
+          : 'Отметить задачу выполненной'"
+        [attr.aria-pressed]="card().completed"
+        (click)="toggleCompletion()"
+      >
+        @if (card().completed) {
+          ✓
+        }
+      </button>
+
+      <h3 class="kanban__card-title">{{ card().title }}</h3>
+    </div>
+
+    <div class="kanban__card-actions">
+      <button
+        class="kanban__edit"
+        type="button"
+        aria-label="Редактировать задачу"
+        title="Редактировать задачу"
+        (click)="requestEdit()"
+      >
+        ✎
+      </button>
+
+      <button
+        class="kanban__delete"
+        type="button"
+        aria-label="Удалить задачу"
+        title="Удалить задачу"
+        (click)="requestDelete()"
+      >
+        ×
+      </button>
+
+      @if (hasExtraInfo()) {
+        <button
+          class="kanban__collapse"
+          type="button"
+          [attr.aria-expanded]="isExpanded()"
+          [attr.aria-label]="isExpanded()
+            ? 'Свернуть дополнительную информацию'
+            : 'Развернуть дополнительную информацию'"
+          [title]="isExpanded()
+            ? 'Свернуть информацию'
+            : 'Развернуть информацию'"
+          (click)="toggleExpanded()"
+        >
+          @if (isExpanded()) {
+            <span aria-hidden="true">⌃</span>
+          } @else {
+            <span aria-hidden="true">⌄</span>
+          }
+        </button>
+      }
+    </div>
+  </div>
+
+  @if (hasExtraInfo() && isExpanded()) {
+    @if (card().assignee?.name) {
+      <div class="kanban__card-assignee">
+    <span class="kanban__card-assignee-label">
+      Исполнитель
+    </span>
+
+        <span class="kanban__card-assignee-name">
+      <span class="kanban__card-assignee-avatar" aria-hidden="true">
+        {{ assigneeInitial() }}
+      </span>
+
+      <span class="kanban__card-assignee-text">
+        {{ card().assignee?.name }}
+      </span>
+    </span>
+      </div>
+    }
+
+    @if (card().description) {
+      <p class="kanban__card-description">
+        {{ card().description }}
+      </p>
+    }
+
+    @if (checklist().length) {
+      <section class="kanban__checklist" aria-label="Чек-лист">
+        <div class="kanban__checklist-header">
+          <span class="kanban__checklist-title">Чек-лист</span>
+
+          <span class="kanban__checklist-count">
+            {{ completedChecklistCount() }} из {{ checklist().length }}
+          </span>
+        </div>
+
+        <div
+          class="kanban__checklist-progress"
+          role="progressbar"
+          aria-label="Выполнение чек-листа"
+          [attr.aria-valuenow]="completedChecklistCount()"
+          [attr.aria-valuemin]="0"
+          [attr.aria-valuemax]="checklist().length"
+        >
+          <span [style.width.%]="checklistProgress()"></span>
+        </div>
+
+        <ul class="kanban__checklist-items">
+          @for (item of checklist(); track item.id) {
+            <li class="kanban__checklist-item">
+              <label class="kanban__checklist-label">
+                <input
+                  class="kanban__checklist-checkbox"
+                  type="checkbox"
+                  [checked]="item.completed"
+                  (change)="toggleChecklistItem(item.id)"
+                />
+
+                <span
+                  class="kanban__checklist-text"
+                  [class.kanban__checklist-text--completed]="item.completed"
+                >
+                  {{ item.text }}
+                </span>
+              </label>
+            </li>
+          }
+        </ul>
+      </section>
+    }
+
+    @if (card().dueDate || card().label) {
+      <footer class="kanban__card-footer">
+        @if (card().dueDate) {
+          <span
+            class="kanban__card-date"
+            [class.kanban__card-date--overdue]="isOverdue()"
+            [attr.title]="isOverdue()
+              ? 'Срок выполнения истёк'
+              : 'Срок выполнения'"
+          >
+            <span aria-hidden="true">◷</span>
+            {{ formattedDueDate() }}
+          </span>
+        }
+
+        @if (card().label) {
+          <span
+            class="kanban__tag"
+            [class.kanban__tag--purple]="card().labelColor === 'purple'"
+            [class.kanban__tag--blue]="card().labelColor === 'blue'"
+            [class.kanban__tag--green]="card().labelColor === 'green'"
+            [title]="card().label"
+          >
+            {{ card().label }}
+          </span>
+        }
+      </footer>
+    }
+  }
+</article>

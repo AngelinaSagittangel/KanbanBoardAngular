@@ -1,0 +1,82 @@
+<main class="auth-page">
+  <section class="auth-card">
+    <a class="auth-logo" routerLink="/">Kanban</a>
+
+    <h1>С возвращением!</h1>
+    <p class="auth-subtitle">
+      Войдите, чтобы продолжить работу с досками.
+    </p>
+
+    <form
+      (ngSubmit)="submit(loginForm)"
+      #loginForm="ngForm"
+      novalidate
+    >
+      <label for="email">Email</label>
+      <input
+        id="email"
+        type="email"
+        name="email"
+        [(ngModel)]="email"
+        (ngModelChange)="clearError()"
+        #emailModel="ngModel"
+        required
+        email
+        autocomplete="email"
+        placeholder="you@example.com"
+        [class.auth-input--error]="
+          emailModel.invalid && (emailModel.touched || emailModel.dirty)
+        "
+      />
+
+      @if (emailModel.invalid && (emailModel.touched || emailModel.dirty)) {
+        <p class="auth-field-error">
+          @if (emailModel.errors?.['required']) {
+            Введите email.
+          } @else if (emailModel.errors?.['email']) {
+            Введите корректный email.
+          }
+        </p>
+      }
+
+      <label for="password">Пароль</label>
+      <input
+        id="password"
+        type="password"
+        name="password"
+        [(ngModel)]="password"
+        (ngModelChange)="clearError()"
+        #passwordModel="ngModel"
+        required
+        autocomplete="current-password"
+        placeholder="Введите пароль"
+        [class.auth-input--error]="
+          passwordModel.invalid &&
+          (passwordModel.touched || passwordModel.dirty)
+        "
+      />
+
+      @if (passwordModel.invalid &&
+      (passwordModel.touched || passwordModel.dirty)) {
+        <p class="auth-field-error">
+          Введите пароль.
+        </p>
+      }
+
+      @if (errorMessage()) {
+        <p class="auth-error" role="alert">
+          {{ errorMessage() }}
+        </p>
+      }
+
+      <button type="submit" [disabled]="isLoading()">
+        {{ isLoading() ? 'Входим…' : 'Войти' }}
+      </button>
+    </form>
+
+    <p class="auth-footer">
+      Ещё нет аккаунта?
+      <a routerLink="/register">Зарегистрироваться</a>
+    </p>
+  </section>
+</main>

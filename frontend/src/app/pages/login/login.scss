@@ -1,0 +1,114 @@
+:host {
+  display: block;
+  min-height: 100vh;
+}
+
+.auth-page {
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  padding: 24px;
+  box-sizing: border-box;
+  background: var(--color-background, #f5f6ff);
+  color: var(--color-text, #25263a);
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 400px;
+  padding: 36px;
+  box-sizing: border-box;
+  border: 1px solid rgba(226, 230, 245, 0.8);
+  border-radius: 22px;
+  background: var(--color-surface, #ffffff);
+  box-shadow: 0 16px 48px rgba(90, 104, 170, 0.1);
+
+  h1 {
+    margin: 28px 0 8px;
+    font-size: 28px;
+    letter-spacing: -0.8px;
+  }
+
+  form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 28px;
+  }
+
+  label {
+    margin-top: 8px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  input {
+    width: 100%;
+    min-height: 44px;
+    padding: 0 12px;
+    box-sizing: border-box;
+    border: 1px solid var(--color-border, #e2e6f5);
+    border-radius: 9px;
+    outline: none;
+    background: var(--color-board, #ffffff);
+    color: var(--color-text, #25263a);
+    font: inherit;
+
+    &:focus {
+      border-color: #756be8;
+      box-shadow: 0 0 0 3px rgba(117, 107, 232, 0.12);
+    }
+  }
+
+  button {
+    min-height: 46px;
+    margin-top: 12px;
+    border: 0;
+    border-radius: 10px;
+    background: linear-gradient(145deg, #8c91f5, #665ce1);
+    color: #ffffff;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+
+    &:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+  }
+}
+
+.auth-logo {
+  color: #756be8;
+  font-size: 23px;
+  font-weight: 750;
+  letter-spacing: -0.7px;
+  text-decoration: none;
+}
+
+.auth-subtitle {
+  margin: 0;
+  color: var(--color-text-secondary, #777c91);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.auth-error {
+  margin: 6px 0 0;
+  color: #c04444;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.auth-footer {
+  margin: 24px 0 0;
+  color: var(--color-text-secondary, #777c91);
+  font-size: 13px;
+  text-align: center;
+
+  a {
+    color: #756be8;
+    font-weight: 600;
+    text-decoration: none;
+  }
+}

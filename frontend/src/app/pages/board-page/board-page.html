@@ -1,0 +1,742 @@
+@if (boardsLoaded() && activeBoardId()) {
+
+  <section class="kanban">
+    <app-header
+      [activeBoardId]="activeBoardId()"
+      (searchResultSelected)="openSearchResult($event)"
+      (notificationSelected)="openCardFromNotification($event)"
+      (boardsListRequested)="openBoardsList()"
+    />
+
+    <main class="kanban__main">
+      <div class="kanban__board-heading">
+        <div class="kanban__board-info">
+          @if (editingBoardTitle()) {
+            <input
+              class="kanban__board-title-input"
+              type="text"
+              maxlength="100"
+              aria-label="Название доски"
+              [value]="boardTitleDraft()"
+              (input)="updateBoardTitleDraft($event)"
+              (keydown.enter)="saveBoardTitle()"
+              (keydown.escape)="cancelBoardTitleEditing()"
+              (blur)="saveBoardTitle()"
+              autofocus
+            />
+          } @else {
+            <h1
+              class="kanban__board-title"
+              tabindex="0"
+              title="Нажми, чтобы изменить название"
+              (click)="startBoardTitleEditing()"
+              (keydown.enter)="startBoardTitleEditing()"
+            >
+              {{ boardTitle() }}
+            </h1>
+          }
+
+          @if (editingBoardDescription()) {
+            <textarea
+              class="kanban__board-description-input"
+              maxlength="500"
+              rows="3"
+              aria-label="Описание доски"
+              [value]="boardDescriptionDraft()"
+              (input)="updateBoardDescriptionDraft($event)"
+              (keydown.escape)="cancelBoardDescriptionEditing()"
+              (keydown.control.enter)="saveBoardDescription()"
+              (blur)="saveBoardDescription()"
+              autofocus
+            ></textarea>
+          } @else {
+            <p
+              class="kanban__board-description"
+              tabindex="0"
+              title="Нажми, чтобы изменить описание"
+              (click)="startBoardDescriptionEditing()"
+              (keydown.enter)="startBoardDescriptionEditing()"
+            >
+              {{ boardDescription() }}
+            </p>
+          }
+        </div>
+
+        <div class="kanban__board-actions">
+          <div class="kanban__boards-selector">
+            <button
+              class="kanban__boards-trigger"
+              type="button"
+              aria-label="Показать все доски"
+              [attr.aria-expanded]="boardsMenuOpen()"
+              (click)="toggleBoardsMenu()"
+            >
+              <span>Все доски</span>
+              <span
+                class="kanban__boards-trigger-chevron"
+                [class.kanban__boards-trigger-chevron--open]="boardsMenuOpen()"
+                aria-hidden="true"
+              >⌄</span>
+            </button>
+
+            @if (boardsMenuOpen()) {
+              <div class="kanban__boards-menu">
+                <span class="kanban__boards-menu-heading">ВАШИ ДОСКИ</span>
+
+                <button
+                  class="kanban__boards-item"
+                  type="button"
+                  (click)="openCreateBoard()"
+                >
+                  <span class="kanban__boards-item-title">+ Создать доску</span>
+                </button>
+
+                @for (board of boards(); track board.id) {
+                  <button
+                    class="kanban__boards-item"
+                    [class.kanban__boards-item--active]="board.title === boardTitle()"
+                    type="button"
+                    (click)="selectBoard(board)"
+                  >
+    <span class="kanban__boards-item-content">
+      <span class="kanban__boards-item-title">
+        {{ board.title }}
+      </span>
+
+      <span class="kanban__boards-item-description">
+        {{ board.description || 'Без описания' }}
+      </span>
+    </span>
+
+                    @if (board.id === activeBoardId()) {
+                      <span class="kanban__boards-item-check" aria-hidden="true">✓</span>
+                    }
+                  </button>
+                }
+
+                @if (boards().length === 0) {
+                  <p class="kanban__boards-empty">
+                    Пока нет досок
+                  </p>
+                }
+
+
+              </div>
+            }
+          </div>
+
+          <div class="kanban__board-menu-wrapper">
+            <button
+              class="kanban__icon-button kanban__icon-button--board"
+              type="button"
+              aria-label="Действия с доской"
+              title="Действия с доской"
+              [attr.aria-expanded]="boardMenuOpen()"
+              (click)="toggleBoardMenu()"
+            >
+              ···
+            </button>
+
+            @if (boardMenuOpen()) {
+              <div class="kanban__board-menu">
+                <span class="kanban__board-menu-heading">НАСТРОЙКИ ДОСКИ</span>
+
+                <button
+                  class="kanban__board-menu-item"
+                  type="button"
+                  (click)="editBoardTitleFromMenu()"
+                >
+                  Изменить название
+                </button>
+
+                <button
+                  class="kanban__board-menu-item"
+                  type="button"
+                  (click)="editBoardDescriptionFromMenu()"
+                >
+                  {{ boardDescription().trim() ? 'Изменить описание' : 'Добавить описание' }}
+                </button>
+
+                <div class="kanban__board-menu-divider"></div>
+
+                <button
+                  class="kanban__board-menu-item"
+                  type="button"
+                  (click)="closeBoardMenu(); openShareModal()"
+                >
+                  Совместный доступ
+                </button>
+
+                <div class="kanban__board-menu-divider"></div>
+
+                <button
+                  class="kanban__board-menu-item kanban__board-menu-item--danger"
+                  type="button"
+                  [disabled]="!isActiveBoardOwner()"
+                  [attr.title]="
+                  isActiveBoardOwner()
+                  ? 'Удалить доску'
+                   : 'Удалить доску может только владелец'
+                  "
+                  (click)="isActiveBoardOwner() && openDeleteBoardModal()"
+                >
+                  Удалить доску
+                </button>
+
+                @if (!isActiveBoardOwner()) {
+                  <p class="kanban__board-menu-hint">
+                    Удалить доску может только владелец
+                  </p>
+                }
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+
+      <section class="kanban__workspace" aria-label="Колонки доски">
+        <div class="kanban__columns">
+          @for (column of columns(); track column.id) {
+            <app-kanban-column
+              [columnId]="column.id"
+              [title]="column.title"
+              [color]="column.color"
+              [cards]="column.cards"
+              (titleChange)="renameColumn(column.id, $event)"
+              (cardCompletionChange)="toggleCardCompletion($event)"
+              (cardCreate)="createCard(column.id, $event)"
+              (cardUpdate)="updateCard($event)"
+              (cardDelete)="deleteCard($event)"
+              (cardMove)="moveCard($event.cardId, $event.targetColumnId)"
+              [pendingDeletions]="pendingDeletions()"
+              (cancelDelete)="cancelDelete($event)"
+              (colorChange)="changeColumnColor($event)"
+              (columnDelete)="deleteColumn($event)"
+              [note]="column.note"
+              (noteChange)="saveColumnNote(column.id, $event)"
+              (checklistChange)="updateChecklist($event)"
+              [highlightedCardId]="highlightedCardId()"
+              (cardFormRequested)="openCardForm($event)"
+            />
+          }
+
+          <button
+            class="kanban__column-add"
+            type="button"
+            (click)="addColumn()"
+          >
+            <span class="kanban__column-add-icon">+</span>
+            <span>Добавить колонку</span>
+          </button>
+        </div>
+      </section>
+    </main>
+
+
+    @if (shareModalOpen()) {
+      <div
+        class="share-modal"
+        (click)="closeShareModal()"
+      >
+        <section
+          class="share-modal__dialog"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="share-modal-title"
+          (click)="$event.stopPropagation()"
+        >
+          <header class="share-modal__header">
+            <div class="share-modal__heading">
+          <span class="share-modal__eyebrow">
+            КОМАНДНАЯ РАБОТА
+          </span>
+
+              <h2
+                id="share-modal-title"
+                class="share-modal__title"
+              >
+                Совместный доступ
+              </h2>
+
+              <p class="share-modal__subtitle">
+                Доска «{{ boardTitle() }}»
+              </p>
+            </div>
+
+            <button
+              class="share-modal__close"
+              type="button"
+              aria-label="Закрыть окно"
+              (click)="closeShareModal()"
+            >
+              &times;
+            </button>
+          </header>
+
+          <div class="share-modal__body">
+            <!-- Приглашение участника -->
+            @if (isActiveBoardOwner()) {
+              <section class="share-modal__section">
+                <div class="share-modal__section-heading">
+                  <div>
+                    <h3>Пригласить участника</h3>
+                    <p>
+                      Введи email зарегистрированного пользователя.
+                    </p>
+                  </div>
+                </div>
+
+                <form
+                  class="share-modal__invite-form"
+                  (submit)="$event.preventDefault(); sendInvitation()"
+                >
+                  <label for="share-invite-email">
+                    Email пользователя
+                  </label>
+
+                  <div class="share-modal__invite-row">
+                    <input
+                      id="share-invite-email"
+                      type="email"
+                      name="inviteEmail"
+                      autocomplete="email"
+                      maxlength="254"
+                      placeholder="name@example.com"
+                      required
+                      [value]="inviteEmail()"
+                      [disabled]="invitationSending()"
+                      (input)="inviteEmail.set($any($event.target).value)"
+                    />
+
+                    <button
+                      class="share-modal__primary-button"
+                      type="submit"
+                      [disabled]="
+                    invitationSending() ||
+                    !inviteEmail().trim()
+                  "
+                    >
+                      {{
+                        invitationSending()
+                          ? 'Отправка…'
+                          : 'Отправить'
+                      }}
+                    </button>
+                  </div>
+                </form>
+
+                @if (invitationError()) {
+                  <p
+                    class="share-modal__message share-modal__message--error"
+                    role="alert"
+                  >
+                    {{ invitationError() }}
+                  </p>
+                }
+
+                @if (invitationSuccess()) {
+                  <p
+                    class="share-modal__message share-modal__message--success"
+                    role="status"
+                  >
+                    {{ invitationSuccess() }}
+                  </p>
+                }
+              </section>
+            }
+
+            <!-- Владелец и участники -->
+            <section class="share-modal__section">
+              <div class="share-modal__section-heading">
+                <div>
+                  <h3>Участники доски</h3>
+                  <p>
+                    Люди, у которых есть доступ к этой доске.
+                  </p>
+                </div>
+
+                <button
+                  class="share-modal__text-button"
+                  type="button"
+                  (click)="loadBoardMembers()"
+                >
+                  Обновить
+                </button>
+              </div>
+
+              @if (boardOwner(); as owner) {
+                <div class="share-modal__member">
+                  <div class="share-modal__avatar">
+                    {{ owner.name.slice(0, 1).toUpperCase() }}
+                  </div>
+
+                  <div class="share-modal__member-info">
+                    <strong>{{ owner.name }}</strong>
+                    <span>Владелец доски</span>
+                  </div>
+
+                  <span class="share-modal__role">
+                Владелец
+              </span>
+                </div>
+              }
+
+              @for (member of boardMembers(); track member.id) {
+                <div class="share-modal__member">
+                  <div class="share-modal__avatar">
+                    {{ member.user.name.slice(0, 1).toUpperCase() }}
+                  </div>
+
+                  <div class="share-modal__member-info">
+                    <strong>{{ member.user.name }}</strong>
+                    <span>{{ member.user.email }}</span>
+                  </div>
+
+                  <span class="share-modal__role">
+                Участник
+                  </span>
+                  @if (isActiveBoardOwner()) {
+                    <button
+                      class="share-modal__text-button"
+                      type="button"
+                      [disabled]="memberActionId() !== null"
+                      (click)="removeBoardMember(member.userId, member.user.name)"
+                    >
+                      {{ memberActionId() === member.userId ? 'Удаление…' : 'Удалить' }}
+                    </button>
+                  }
+                </div>
+              } @empty {
+                @if (!boardOwner()) {
+                  <p class="share-modal__empty">
+                    Загружаем информацию о доске…
+                  </p>
+                } @else {
+                  <p class="share-modal__empty">
+                    Пока никто не присоединился к доске.
+                  </p>
+                }
+              }
+
+              @if (memberActionError()) {
+                <p class="share-modal__message share-modal__message--error" role="alert">
+                  {{ memberActionError() }}
+                </p>
+              }
+
+              @if (memberActionSuccess()) {
+                <p class="share-modal__message share-modal__message--success" role="status">
+                  {{ memberActionSuccess() }}
+                </p>
+              }
+
+              @if (activeBoardId() && !isActiveBoardOwner()) {
+                <button
+                  class="share-modal__text-button"
+                  type="button"
+                  [disabled]="boardLeaving()"
+                  (click)="leaveBoard()"
+                >
+                  {{ boardLeaving() ? 'Выход…' : 'Выйти' }}
+                </button>
+              }
+            </section>
+
+
+            <!-- Входящие приглашения -->
+            <section class="share-modal__section">
+              <div class="share-modal__section-heading">
+                <div>
+                  <h3>Входящие приглашения</h3>
+                  <p>
+                    Приглашения других пользователей для тебя.
+                  </p>
+                </div>
+
+                <button
+                  class="share-modal__text-button"
+                  type="button"
+                  [disabled]="invitationsLoading()"
+                  (click)="loadIncomingInvitations()"
+                >
+                  Обновить
+                </button>
+              </div>
+
+              @if (invitationsLoading()) {
+                <p class="share-modal__empty">
+                  Загружаем приглашения…
+                </p>
+              } @else {
+                @for (invitation of incomingInvitations();
+                  track invitation.id) {
+                  <div class="share-modal__invitation">
+                    <div class="share-modal__invitation-info">
+                      <strong>{{ invitation.board.title }}</strong>
+
+                      <span>
+                    От: {{ invitation.invitedBy.name }}
+                        @if (invitation.invitedBy.email) {
+                          ({{ invitation.invitedBy.email }})
+                        }
+                  </span>
+                    </div>
+
+                    <div class="share-modal__invitation-actions">
+                      <button
+                        class="share-modal__accept"
+                        type="button"
+                        [disabled]="respondingInvitationId() !== null"
+                        (click)="respondToInvitation(invitation, 'accept')"
+                      >
+                        {{
+                          respondingInvitationId() === invitation.id
+                            ? 'Обработка…'
+                            : 'Принять'
+                        }}
+                      </button>
+
+                      <button
+                        class="share-modal__decline"
+                        type="button"
+                        [disabled]="respondingInvitationId() !== null"
+                        (click)="respondToInvitation(invitation, 'decline')"
+                      >
+                        Отклонить
+                      </button>
+                    </div>
+                  </div>
+                } @empty {
+                  <p class="share-modal__empty">
+                    Новых приглашений нет.
+                  </p>
+                }
+              }
+
+              @if (incomingInvitationsError()) {
+                <p
+                  class="share-modal__message share-modal__message--error"
+                  role="alert"
+                >
+                  {{ incomingInvitationsError() }}
+                </p>
+              }
+            </section>
+          </div>
+        </section>
+      </div>
+    }
+
+
+  </section>
+}
+
+@if (columnPendingDelete(); as column) {
+  <app-confirm-modal
+    title="Удалить колонку?"
+    [description]="'Вы собираетесь удалить колонку «' + column.title + '» вместе со всеми карточками внутри неё. Это действие нельзя отменить.'"
+    confirmText="Удалить колонку"
+    [loading]="false"
+    (cancel)="cancelColumnDelete()"
+    (confirm)="confirmColumnDelete()"
+  />
+}
+
+@if (createBoardModalOpen()) {
+  <div class="confirm-modal" (click)="createBoardModalOpen.set(false)">
+    <section
+      class="confirm-modal__dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="create-board-title"
+      (click)="$event.stopPropagation()"
+    >
+      <h2 class="confirm-modal__title" id="create-board-title">
+        Создать доску
+      </h2>
+
+      <label>
+        Название доски
+        <input
+          type="text"
+          maxlength="100"
+          placeholder="Например, Мои задачи"
+          [value]="newBoardTitle()"
+          (input)="newBoardTitle.set($any($event.target).value)"
+        />
+      </label>
+
+      <label>
+        Описание
+        <textarea
+          maxlength="500"
+          rows="3"
+          placeholder="Для чего нужна эта доска?"
+          [value]="newBoardDescription()"
+          (input)="newBoardDescription.set($any($event.target).value)"
+        ></textarea>
+      </label>
+
+      <div class="confirm-modal__actions">
+        <button
+          class="confirm-modal__button confirm-modal__button--cancel"
+          type="button"
+          (click)="createBoardModalOpen.set(false)"
+        >
+          Отмена
+        </button>
+
+        <button
+          class="confirm-modal__button"
+          type="button"
+          [disabled]="!newBoardTitle().trim()"
+          (click)="createBoard()"
+        >
+          Создать доску
+        </button>
+      </div>
+    </section>
+  </div>
+}
+
+@if (boardsLoaded() && !activeBoardId()) {
+  <div class="board-picker">
+    <section
+      class="board-picker__dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="board-picker-title"
+    >
+      @if (boardDeletedNotice()) {
+        <p class="board-picker__notice" role="status">{{ boardDeletedNotice() }}</p>
+      }
+
+      <div class="board-picker__intro">
+        <span class="board-picker__eyebrow">KANBAN WORKSPACE</span>
+
+        @if (boards().length === 0) {
+          <h1 id="board-picker-title">Добро пожаловать!</h1>
+          <p>
+            Создай свою первую доску, чтобы собрать задачи
+            и организовать работу в одном месте.
+          </p>
+        } @else {
+          <h1 id="board-picker-title">Выбери свою доску</h1>
+          <p>
+            Продолжи работу с существующей доской
+            или создай новую.
+          </p>
+        }
+      </div>
+
+      <button
+        class="board-picker__create"
+        type="button"
+        (click)="openCreateBoard()"
+      >
+        <span class="board-picker__create-icon">+</span>
+
+        <span>
+          <strong>Создать новую доску</strong>
+          <small>Название и описание можно указать сразу</small>
+        </span>
+      </button>
+
+      @if (boards().length > 0) {
+        <div class="board-picker__list">
+          <h2>Мои доски</h2>
+
+          @for (board of boards(); track board.id) {
+            <button
+              class="board-picker__item"
+              type="button"
+              (click)="selectBoard(board)"
+            >
+             <span class="board-picker__item-icon" aria-hidden="true">
+                 ▦
+             </span>
+
+              <span class="board-picker__item-content">
+                <strong>{{ board.title }}</strong>
+                <small>
+                  {{ board.description || 'Без описания' }}
+                </small>
+              </span>
+
+              <span class="board-picker__item-arrow">→</span>
+            </button>
+          }
+        </div>
+      } @else {
+        <p class="board-picker__empty">
+          У тебя пока нет досок. Создай первую!
+        </p>
+      }
+    </section>
+  </div>
+}
+
+@if (cardFormModalOpen() && activeCardColumnId(); as columnId) {
+  <app-card-form-modal
+    [boardId]="activeBoardId()!"
+    [activityRefreshKey]="cardActivityRefreshKey()"
+    [columnId]="columnId"
+    [cards]="getCardsForColumn(columnId)"
+    [isOpen]="cardFormModalOpen()"
+    [editingCard]="editingCard()"
+    [members]="boardMembers()"
+    [owner]="boardOwner()"
+    [canAssign]="isActiveBoardOwner()"
+    (cardCreate)="createCard($event.columnId, $event.card)"
+    (cardUpdate)="updateCard($event)"
+    (modalClose)="closeCardForm()"
+    (cardEditingStart)="startCardEditing($event)"
+    (cardEditingStop)="stopCardEditing($event)"
+    [editingUserId]="editingCards()[editingCard()?.id ?? '']"
+    [editingConflict]="editingCardConflict()?.cardId === editingCard()?.id ? editingCardConflict() : null"
+    [editingUserName]="editingUserName(editingCards()[editingCard()?.id ?? ''] || '')"
+    [saveError]="cardSaveError()"
+  />
+}
+
+
+@if (deleteBoardModalOpen() && boardPendingDelete(); as board) {
+  <app-confirm-modal
+    title="Удалить доску?"
+    [description]="'Ты собираешься удалить доску «' + board.title + '» вместе со всеми её колонками и карточками. Это действие нельзя отменить.'"
+    confirmText="Удалить доску"
+    [loading]="boardDeleting()"
+    loadingText="Удаление..."
+    (cancel)="cancelBoardDelete()"
+    (confirm)="confirmBoardDelete()"
+  />
+}
+
+@if (memberToRemove(); as member) {
+  <app-confirm-modal
+    title="Удалить участника?"
+    [description]="'Участник «' + member.name + '» потеряет доступ к этой доске.'"
+    confirmText="Удалить участника"
+    [loading]="memberActionId() !== null"
+    [loadingText]="memberActionId() === member.userId ? 'Удаление…' : 'Выполнение…'"
+    [error]="memberActionError()"
+    icon="member"
+    (cancel)="cancelMemberRemoval()"
+    (confirm)="confirmMemberRemoval()"
+  />
+}
+
+@if (leaveBoardModalOpen()) {
+  <app-confirm-modal
+    title="Покинуть доску?"
+    [description]="'Ты потеряешь доступ к доске «' + leaveBoardTitle() + '». Чтобы вернуться, владелец должен будет снова предоставить тебе доступ.'"
+    confirmText="Покинуть доску"
+    [loading]="boardLeaving()"
+    loadingText="Выход…"
+    [error]="leaveBoardError()"
+    icon="leave"
+    (cancel)="cancelLeaveBoard()"
+    (confirm)="confirmLeaveBoard()"
+  />
+}
+

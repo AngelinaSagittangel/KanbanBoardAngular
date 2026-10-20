@@ -1,0 +1,100 @@
+
+:root {
+  color-scheme: light;
+
+  // Основные поверхности
+  --color-page: #f5f6f8;
+  --color-board: #ffffff;
+  --color-column: #f3f4f6;
+  --color-card: #ffffff;
+  --color-input: #ffffff;
+
+  // Текст
+  --color-text: #20242c;
+  --color-text-secondary: #737b89;
+  --color-text-muted: #a0a6b2;
+
+  // Акцент
+  --color-accent: #5b6ee1;
+  --color-accent-hover: #485bc9;
+  --color-accent-soft: #edf0ff;
+
+  // Границы и разделители
+  --color-border: #e5e8ee;
+  --color-border-strong: #d4d9e2;
+
+  // Состояния
+  --color-success: #299764;
+  --color-danger: #dc5c5c;
+  --color-warning: #d99a32;
+
+  // Колонки
+  --color-column-blue: #e8efff;
+  --color-column-purple: #f0eaff;
+  --color-column-green: #e2f5e9;
+  --color-column-yellow: #fff2d6;
+  --color-column-pink: #fce7ef;
+  --color-column-orange: #ffeadc;
+  --color-column-teal: #ddf4f1;
+  --color-column-gray: #e9ecf1;
+
+  // Тени
+  --shadow-card: 0 2px 5px rgb(32 36 44 / 5%);
+  --shadow-menu: 0 8px 24px rgb(32 36 44 / 12%);
+
+  // Скругления
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-pill: 999px;
+
+  // Размеры
+  --header-height: 64px;
+  --board-padding: 24px;
+  --column-width: 280px;
+
+  // Интервалы
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+}
+
+[data-theme='dark'] {
+  color-scheme: dark;
+
+  --color-page: #17191f;
+  --color-board: #20232b;
+  --color-column: #292d37;
+  --color-card: #333845;
+  --color-input: #292d37;
+
+  --color-text: #edf0f6;
+  --color-text-secondary: #b0b7c5;
+  --color-text-muted: #858e9e;
+
+  --color-accent: #8795ff;
+  --color-accent-hover: #a0aaff;
+  --color-accent-soft: #303650;
+
+  --color-border: #3a404d;
+  --color-border-strong: #4b5261;
+
+  --color-success: #54c78c;
+  --color-danger: #f07878;
+  --color-warning: #e8b75c;
+
+  --color-column-blue: #303b55;
+  --color-column-purple: #3e3553;
+  --color-column-green: #2b463b;
+  --color-column-yellow: #4a4230;
+  --color-column-pink: #4a3440;
+  --color-column-orange: #4a392f;
+  --color-column-teal: #294542;
+  --color-column-gray: #363b46;
+
+  --shadow-card: 0 2px 6px rgb(0 0 0 / 15%);
+  --shadow-menu: 0 8px 24px rgb(0 0 0 / 30%);
+}

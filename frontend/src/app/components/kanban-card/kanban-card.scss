@@ -1,0 +1,475 @@
+
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.kanban {
+  &__card {
+    min-width: 0;
+    padding: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.9);
+    border-radius: 11px;
+    background: var(--color-card);
+    box-shadow: var(--shadow-card);
+    transition: transform 180ms ease,
+    box-shadow 180ms ease,
+    opacity 180ms ease,
+    border-color 180ms ease;
+    user-select: none;
+    -webkit-user-select: none;
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 7px 18px rgba(71, 83, 130, 0.08);
+    }
+
+    &--completed {
+      opacity: 0.8;
+
+      .kanban__card-title {
+        color: var(--color-text-muted);
+        text-decoration: line-through;
+      }
+    }
+
+    &--editing {
+      border-color: var(--color-accent);
+      box-shadow: 0 0 0 2px var(--color-accent-soft),
+      0 4px 12px rgba(71, 83, 130, 0.08);
+
+      &:hover {
+        transform: none;
+      }
+    }
+  }
+
+  &__card-main {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  &__card-heading {
+    display: flex;
+    flex: 1 1 auto;
+    align-items: flex-start;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  &__complete {
+    display: grid;
+    flex: 0 0 19px;
+    place-items: center;
+    width: 19px;
+    height: 19px;
+    margin: 2px 0 0;
+    padding: 0;
+    border: 1.5px solid #c6cddd;
+    border-radius: 50%;
+    background: transparent;
+    color: #ffffff;
+    font-size: 12px;
+    line-height: 1;
+    cursor: pointer;
+    transition: background 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease;
+
+    &:hover {
+      border-color: var(--color-accent);
+      background: var(--color-accent-soft);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--color-accent);
+      outline-offset: 3px;
+    }
+
+    &--done {
+      border-color: #7770df;
+      background: #7770df;
+
+      &:hover {
+        border-color: #665ce1;
+        background: #665ce1;
+      }
+    }
+  }
+
+  &__card-title {
+    flex: 1 1 auto;
+    min-width: 0;
+    margin: 0;
+    color: var(--color-text);
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.55;
+    overflow-wrap: anywhere;
+  }
+
+  &__card-actions {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 2px;
+    margin: -3px -3px 0 0;
+  }
+
+  &__edit,
+  &__delete,
+  &__collapse {
+    display: inline-flex;
+    flex: 0 0 26px;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    margin: 0;
+    padding: 0;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    font-family: inherit;
+    line-height: 1;
+    cursor: pointer;
+    transition: background 180ms ease,
+    color 180ms ease,
+    opacity 180ms ease;
+  }
+
+  &__edit,
+  &__delete {
+    opacity: 0;
+  }
+
+  &__edit {
+    color: var(--color-text-muted);
+    font-size: 17px;
+
+    &:hover {
+      background: var(--color-accent-soft);
+      color: var(--color-accent);
+    }
+  }
+
+  &__delete {
+    color: #a2a6a3;
+    font-size: 20px;
+
+    &:hover {
+      background: rgba(200, 93, 93, 0.08);
+      color: #c85d5d;
+    }
+  }
+
+  &__collapse {
+    color: var(--color-text-muted);
+    font-size: 19px;
+    opacity: 0.85;
+
+    &:hover {
+      background: var(--color-accent-soft);
+      color: var(--color-accent);
+      opacity: 1;
+    }
+  }
+
+  &__card:hover &__edit,
+  &__card:hover &__delete,
+  &__edit:focus-visible,
+  &__delete:focus-visible {
+    opacity: 1;
+  }
+
+  &__edit:focus-visible,
+  &__delete:focus-visible,
+  &__collapse:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+    opacity: 1;
+  }
+
+  &__card-description {
+    margin: 9px 0 0;
+    padding-top: 8px;
+    border-top: 1px solid rgba(130, 140, 165, 0.14);
+    color: var(--color-text-secondary);
+    font-size: 11px;
+    line-height: 1.65;
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+  }
+
+  &__card-assignee {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    margin-top: 8px;
+  }
+
+  &__card-assignee-label {
+    color: var(--text-secondary, #777c78);
+    font-size: 10px;
+    font-weight: 500;
+    line-height: 1.3;
+  }
+
+  &__card-assignee-name {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    max-width: 100%;
+    padding: 3px 8px 3px 3px;
+    border: 1px solid rgba(63, 125, 104, 0.16);
+    border-radius: 999px;
+    background: rgba(63, 125, 104, 0.08);
+    color: var(--text-primary, #202320);
+    font-size: 10px;
+    font-weight: 500;
+    line-height: 1.2;
+  }
+
+  &__card-assignee-avatar {
+    display: inline-flex;
+    flex: 0 0 18px;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #3f7d68;
+    color: #fff;
+    font-size: 9px;
+    font-weight: 600;
+  }
+
+  &__card-assignee-text {
+    overflow: hidden;
+    max-width: 150px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  // Чек-лист
+
+  &__checklist {
+    min-width: 0;
+    margin-top: 12px;
+    padding: 10px;
+    border: 1px solid rgba(130, 140, 165, 0.16);
+    border-radius: 9px;
+    background: rgba(130, 140, 165, 0.045);
+  }
+
+  &__checklist-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 9px;
+  }
+
+  &__checklist-title {
+    color: var(--color-text);
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  &__checklist-count {
+    flex: 0 0 auto;
+    color: var(--color-text-muted);
+    font-size: 10px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__checklist-progress {
+    width: 100%;
+    height: 4px;
+    margin-bottom: 10px;
+    overflow: hidden;
+    border-radius: 99px;
+    background: rgba(130, 140, 165, 0.17);
+
+    span {
+      display: block;
+      height: 100%;
+      border-radius: inherit;
+      background: var(--color-accent);
+      transition: width 220ms ease;
+    }
+  }
+
+  &__checklist-items {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  &__checklist-item {
+    min-width: 0;
+  }
+
+  &__checklist-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    min-width: 0;
+    cursor: pointer;
+  }
+
+  &__checklist-checkbox {
+    flex: 0 0 14px;
+    width: 14px;
+    height: 14px;
+    margin: 2px 0 0;
+    accent-color: var(--color-accent);
+    cursor: pointer;
+
+    &:focus-visible {
+      outline: 2px solid var(--color-accent);
+      outline-offset: 2px;
+    }
+  }
+
+  &__checklist-text {
+    min-width: 0;
+    color: var(--color-text-secondary);
+    font-size: 11px;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+    transition: color 180ms ease;
+
+    &--completed {
+      color: var(--color-text-muted);
+      text-decoration: line-through;
+      opacity: 0.75;
+    }
+  }
+
+  // Дата и метка
+
+  &__card-footer {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 7px;
+    min-width: 0;
+    margin-top: 12px;
+    padding-top: 9px;
+    border-top: 1px solid rgba(130, 140, 165, 0.12);
+  }
+
+  &__card-date {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    min-height: 23px;
+    padding: 0 7px;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    color: var(--color-text-muted);
+    font-size: 10px;
+    transition: color 180ms ease,
+    background 180ms ease,
+    border-color 180ms ease;
+
+    &--overdue {
+      border-color: rgba(214, 83, 98, 0.4);
+      background: rgba(214, 83, 98, 0.08);
+      color: #d65362;
+    }
+  }
+
+  &__tag {
+    display: inline-flex;
+    align-items: center;
+    max-width: 100%;
+    min-width: 0;
+    min-height: 22px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: 600;
+    line-height: 1.4;
+    white-space: normal;
+    overflow-wrap: anywhere;
+
+    &--purple {
+      background: #f0eaff;
+      color: #7860c9;
+    }
+
+    &--blue {
+      background: #e5efff;
+      color: #4d79c4;
+    }
+
+    &--green {
+      background: #e2f5e9;
+      color: #34845a;
+    }
+  }
+}
+
+
+@media (hover: none) {
+  .kanban {
+    &__edit,
+    &__delete {
+      opacity: 1;
+    }
+
+    &__card:hover {
+      transform: none;
+    }
+  }
+}
+
+
+@media (prefers-reduced-motion: reduce) {
+  .kanban {
+    &__card,
+    &__complete,
+    &__edit,
+    &__delete,
+    &__collapse,
+    &__card-date,
+    &__checklist-progress span,
+    &__checklist-text {
+      transition: none;
+    }
+  }
+}
+
+.kanban__card--search-highlight {
+  animation: kanban-card-search-highlight 2.5s ease-out;
+  outline: 2px solid rgba(100, 136, 220, 0.9);
+  outline-offset: 3px;
+}
+
+@keyframes kanban-card-search-highlight {
+  0% {
+    box-shadow: 0 0 0 7px rgba(100, 136, 220, 0.3);
+    outline-color: rgba(100, 136, 220, 1);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 rgba(100, 136, 220, 0);
+    outline-color: rgba(100, 136, 220, 0.35);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kanban__card--search-highlight {
+    animation: none;
+  }
+}

@@ -1,0 +1,230 @@
+<article
+  class="kanban__column"
+  [class.kanban__column--blue]="color() === 'blue'"
+  [class.kanban__column--purple]="color() === 'purple'"
+  [class.kanban__column--green]="color() === 'green'"
+  [class.kanban__column--yellow]="color() === 'yellow'"
+  [class.kanban__column--pink]="color() === 'pink'"
+  [class.kanban__column--orange]="color() === 'orange'"
+  [class.kanban__column--teal]="color() === 'teal'"
+  [class.kanban__column--gray]="color() === 'gray'"
+  [class.kanban__column--drag-over]="isDragOver()"
+  (dragenter)="onDragEnter()"
+  (dragleave)="onDragLeave()"
+  (dragover)="onDragOver($event)"
+  (drop)="onDrop($event)"
+>
+  <header class="kanban__column-header">
+    <div class="kanban__column-title-group">
+      <span class="kanban__column-dot"></span>
+
+      @if (editingTitle()) {
+        <input
+          class="kanban__column-title-input"
+          type="text"
+          maxlength="50"
+          [value]="draftTitle()"
+          (input)="updateDraftTitle($event)"
+          (keydown.enter)="saveTitle()"
+          (keydown.escape)="cancelEditingTitle()"
+          aria-label="Название колонки"
+          autofocus
+        />
+      } @else {
+        <h2
+          class="kanban__column-title"
+          (click)="startEditingTitle()"
+          title="Нажми, чтобы изменить название"
+        >
+          {{ title() }}
+        </h2>
+      }
+
+      <span class="kanban__column-count">{{ cards().length }}</span>
+    </div>
+
+    <div class="kanban__column-actions">
+      <select
+        class="kanban__column-sort"
+        [value]="sortBy()"
+        (change)="updateSort($event)"
+        aria-label="Сортировка карточек"
+        title="Сортировка карточек"
+      >
+        <option value="default">Без сортировки</option>
+        <option value="name">По названию</option>
+        <option value="date">По дате</option>
+      </select>
+
+      <div
+        class="kanban__column-menu-wrapper"
+        [class.kanban__column-menu-wrapper--open]="isMenuOpen()"
+      >
+        <button
+          class="kanban__column-icon"
+          type="button"
+          aria-label="Меню колонки"
+          title="Меню колонки"
+          [attr.aria-expanded]="isMenuOpen()"
+          (click)="toggleMenu()"
+        >
+          ···
+        </button>
+
+        @if (isMenuOpen()) {
+          <div
+            class="kanban__column-menu"
+            role="menu"
+            aria-label="Действия с колонкой"
+          >
+            <button
+              class="kanban__column-menu-item"
+              type="button"
+              role="menuitem"
+              (click)="renameFromMenu()"
+            >
+              <span class="kanban__column-menu-icon">✎</span>
+              Переименовать
+            </button>
+
+            <div class="kanban__column-menu-section">
+              <span class="kanban__column-menu-label">Цвет колонки</span>
+
+              <div class="kanban__column-colors" role="group" aria-label="Выбор цвета колонки">
+                <button class="kanban__column-color kanban__column-color--blue" type="button" aria-label="Синий"
+                        title="Синий" [class.kanban__column-color--selected]="color() === 'blue'"
+                        [attr.aria-pressed]="color() === 'blue'" (click)="changeColor('blue')"></button>
+                <button class="kanban__column-color kanban__column-color--purple" type="button" aria-label="Фиолетовый"
+                        title="Фиолетовый" [class.kanban__column-color--selected]="color() === 'purple'"
+                        [attr.aria-pressed]="color() === 'purple'" (click)="changeColor('purple')"></button>
+                <button class="kanban__column-color kanban__column-color--green" type="button" aria-label="Зелёный"
+                        title="Зелёный" [class.kanban__column-color--selected]="color() === 'green'"
+                        [attr.aria-pressed]="color() === 'green'" (click)="changeColor('green')"></button>
+                <button class="kanban__column-color kanban__column-color--yellow" type="button" aria-label="Жёлтый"
+                        title="Жёлтый" [class.kanban__column-color--selected]="color() === 'yellow'"
+                        [attr.aria-pressed]="color() === 'yellow'" (click)="changeColor('yellow')"></button>
+                <button class="kanban__column-color kanban__column-color--pink" type="button" aria-label="Розовый"
+                        title="Розовый" [class.kanban__column-color--selected]="color() === 'pink'"
+                        [attr.aria-pressed]="color() === 'pink'" (click)="changeColor('pink')"></button>
+                <button class="kanban__column-color kanban__column-color--orange" type="button" aria-label="Оранжевый"
+                        title="Оранжевый" [class.kanban__column-color--selected]="color() === 'orange'"
+                        [attr.aria-pressed]="color() === 'orange'" (click)="changeColor('orange')"></button>
+                <button class="kanban__column-color kanban__column-color--teal" type="button" aria-label="Бирюзовый"
+                        title="Бирюзовый" [class.kanban__column-color--selected]="color() === 'teal'"
+                        [attr.aria-pressed]="color() === 'teal'" (click)="changeColor('teal')"></button>
+                <button class="kanban__column-color kanban__column-color--gray" type="button" aria-label="Серый"
+                        title="Серый" [class.kanban__column-color--selected]="color() === 'gray'"
+                        [attr.aria-pressed]="color() === 'gray'" (click)="changeColor('gray')"></button>
+              </div>
+            </div>
+
+            <div class="kanban__column-menu-divider"></div>
+
+            <button
+              class="kanban__column-menu-item kanban__column-menu-item--danger"
+              type="button"
+              role="menuitem"
+              (click)="deleteFromMenu()"
+            >
+              <span class="kanban__column-menu-icon">×</span>
+              Удалить колонку
+            </button>
+          </div>
+        }
+      </div>
+    </div>
+  </header>
+
+  <div class="kanban__cards" (dragover)="onDragOver($event)">
+    @for (item of displayItems(); track item.type === 'card' ? item.card.id : item.deletion.card.id) {
+      @if (item.type === 'card') {
+        <app-kanban-card
+          [card]="item.card"
+          [isEditing]="false"
+          (completionChange)="cardCompletionChange.emit($event)"
+          (editRequest)="startEditingCard($event)"
+          (deleteRequest)="cardDelete.emit($event)"
+          (checklistChange)="checklistChange.emit($event)"
+        />
+      } @else {
+        <div class="kanban__undo-delete">
+          <div class="kanban__undo-delete-info">
+            <span class="kanban__undo-delete-title">Карточка удалена</span>
+            <span class="kanban__undo-delete-description">
+              Можно восстановить в течение
+              {{ remainingSeconds()[item.deletion.card.id] ?? 5 }} сек.
+            </span>
+          </div>
+
+          <button
+            class="kanban__undo-delete-button"
+            type="button"
+            (click)="cancelDelete.emit(item.deletion.card.id)"
+          >
+            Отменить
+          </button>
+
+          <div class="kanban__undo-delete-progress"><span></span></div>
+        </div>
+      }
+    } @empty {
+      <p class="kanban__empty">Пока нет карточек</p>
+    }
+  </div>
+
+  <button class="kanban__add-card" type="button" (click)="openCardForm()">
+    <span class="kanban__add-icon">+</span>
+    Добавить карточку
+  </button>
+
+  <div class="kanban__comments">
+    <div class="kanban__comments-header">
+      <span class="kanban__comments-label">Заметки колонки</span>
+
+      @if (!editingComment()) {
+        <button
+          class="kanban__comments-edit"
+          type="button"
+          (click)="startEditingComment()"
+          [attr.aria-label]="columnComment() ? 'Изменить заметку' : 'Добавить заметку'"
+          [title]="columnComment() ? 'Изменить заметку' : 'Добавить заметку'"
+        >
+          ✎
+        </button>
+      }
+    </div>
+
+    @if (editingComment()) {
+      <textarea
+        class="kanban__comments-textarea"
+        maxlength="300"
+        placeholder="Добавь заметку для задач в этой колонке..."
+        [value]="commentDraft()"
+        (input)="updateComment($event)"
+        aria-label="Заметка колонки"
+        autofocus
+      ></textarea>
+
+      <div class="kanban__comments-edit-footer">
+        <span class="kanban__comments-counter">
+          {{ commentDraft().length }}/{{ MAX_COMMENT_LENGTH }}
+        </span>
+
+        <div class="kanban__comments-actions">
+          <button class="kanban__comments-cancel" type="button" (click)="cancelEditingComment()">Отмена</button>
+          <button class="kanban__comments-save" type="button" (click)="saveComment()">Сохранить</button>
+        </div>
+      </div>
+    } @else {
+      @if (columnComment()) {
+        <p class="kanban__comments-text" [title]="columnComment()">{{ columnComment() }}</p>
+      } @else {
+        <button class="kanban__comments-placeholder" type="button" (click)="startEditingComment()">
+          Добавь заметку для задач в этой колонке...
+        </button>
+      }
+    }
+  </div>
+</article>
+
+

@@ -1,0 +1,569 @@
+@if (isOpen()) {
+  <div
+    class="kanban-modal"
+    role="presentation"
+    (click)="cancelCardCreation()"
+  >
+    <section
+      class="kanban-modal__dialog"
+      role="dialog"
+      aria-modal="true"
+      [attr.aria-label]="editingCardId() ? 'Редактирование карточки' : 'Создание карточки'"
+      (click)="$event.stopPropagation()"
+    >
+      <header class="kanban-modal__header">
+        <div>
+          <h2 class="kanban-modal__title">
+            {{ editingCardId() ? 'Редактирование карточки' : 'Новая карточка' }}
+          </h2>
+          <p class="kanban-modal__subtitle">
+            {{ editingCardId() ? 'Измени данные задачи' : 'Заполни данные новой задачи' }}
+          </p>
+        </div>
+
+        <button
+          class="kanban-modal__close"
+          type="button"
+          aria-label="Закрыть окно"
+          title="Закрыть"
+          (click)="cancelCardCreation()"
+        >
+          ×
+        </button>
+      </header>
+
+      @if (editingCardId()) {
+        <nav class="kanban-modal__tabs" aria-label="Разделы карточки">
+          <button type="button" class="kanban-modal__tab" [class.kanban-modal__tab--active]="activeTab() === 'card'"
+                  (click)="selectTab('card')">Карточка
+          </button>
+          <button type="button" class="kanban-modal__tab" [class.kanban-modal__tab--active]="activeTab() === 'comments'"
+                  (click)="selectTab('comments')">Комментарии <span>{{ comments().length }}</span></button>
+          <button type="button" class="kanban-modal__tab" [class.kanban-modal__tab--active]="activeTab() === 'activity'"
+                  (click)="selectTab('activity')">История
+          </button>
+        </nav>
+      }
+
+      @if (activeTab() === 'card') {
+        @if (editingConflict(); as conflict) {
+
+          <div class="kanban-modal__editing-warning" role="status">
+            <span class="kanban-modal__editing-warning-icon" aria-hidden="true">!</span>
+
+            <div class="kanban-modal__editing-warning-content">
+              <strong>Внимание!</strong>
+              <p>
+                Карточку уже редактирует другой участник {{ editingUserName() }}.
+                Перед сохранением проверь изменения другого участника.
+              </p>
+            </div>
+          </div>
+        }
+
+        @if (saveError()) {
+          <div class="kanban-modal__editing-warning" role="status">
+            <span class="kanban-modal__editing-warning-icon" aria-hidden="true">!</span>
+            <div class="kanban-modal__editing-warning-content" role="alert">
+              <strong>Карточка была изменена.</strong>
+              <p>{{ saveError() }}</p>
+
+              <button
+                class="kanban__card-form-save"
+                type="button"
+                (click)="saveCard(true)"
+              >
+                Сохранить мои изменения поверх актуальной версии
+              </button>
+            </div>
+          </div>
+        }
+
+        @if (hasRemoteChanges() && latestCard(); as latest) {
+          <section
+            class="kanban-modal__latest-version"
+            role="status"
+            aria-live="polite"
+          >
+            <div class="kanban-modal__latest-version-header">
+              <strong>Карточка обновлена другим участником</strong>
+              <p>Вот актуальные данные, сохранённые на доске.</p>
+            </div>
+
+            <div class="kanban-modal__latest-version-content">
+              <p>
+                <strong>Название:</strong>
+                {{ latest.title }}
+              </p>
+
+              <p>
+                <strong>Описание:</strong>
+                {{ latest.description || 'Нет описания' }}
+              </p>
+
+              <p>
+                <strong>Срок:</strong>
+                {{ latest.dueDate ? formatDueDate(latest.dueDate) : 'Не указан' }}
+              </p>
+              <p>
+                <strong>Последнее изменение:</strong>
+                {{ latest.updatedAt | date:'dd.MM.yyyy, HH:mm:ss' }}
+              </p>
+
+              <p>
+                <strong>Метка:</strong>
+                {{ latest.label || 'Нет метки' }}
+              </p>
+
+              <p>
+                <strong>Пунктов чек-листа:</strong>
+                {{ latest.checklist?.length ?? 0 }}
+              </p>
+            </div>
+
+            <div class="kanban-modal__latest-version-actions">
+              <button
+                type="button"
+                class="kanban__card-form-cancel"
+                (click)="loadLatestVersion()"
+              >
+                Загрузить актуальную версию
+              </button>
+
+              <button
+                type="button"
+                class="kanban__card-form-save"
+                (click)="saveCard(true)"
+              >
+                Сохранить мои изменения поверх актуальной версии
+              </button>
+            </div>
+          </section>
+        }
+      }
+      @if (activeTab() === 'card' || !editingCardId()) {
+        <div class="kanban-modal__body">
+          <label class="kanban__card-form-label" for="new-card-title">
+            Название задачи
+          </label>
+
+          <input
+            id="new-card-title"
+            class="kanban__card-form-input"
+            type="text"
+            maxlength="100"
+            placeholder="Например, создать страницу"
+            [value]="newCardTitle()"
+            (input)="updateNewCardTitle($event)"
+            (keydown.enter)="saveCard()"
+            autofocus
+          />
+
+          @if (cardTitleError()) {
+            <p class="kanban__card-form-error">{{ cardTitleError() }}</p>
+          }
+
+          <span class="kanban__card-form-label">Содержание карточки</span>
+
+          <div
+            class="kanban__card-content-mode"
+            role="group"
+            aria-label="Выбор содержания карточки"
+          >
+            <button
+              class="kanban__card-content-mode-button"
+              [class.kanban__card-content-mode-button--active]="!isChecklistEditorVisible()"
+              type="button"
+              [attr.aria-pressed]="!isChecklistEditorVisible()"
+              (click)="isChecklistEditorVisible.set(false)"
+            >
+              Описание
+            </button>
+
+            <button
+              class="kanban__card-content-mode-button"
+              [class.kanban__card-content-mode-button--active]="isChecklistEditorVisible()"
+              type="button"
+              [attr.aria-pressed]="isChecklistEditorVisible()"
+              (click)="addChecklist()"
+            >
+              Чек-лист
+            </button>
+          </div>
+
+          @if (!isChecklistEditorVisible()) {
+            <label class="kanban__card-form-label" for="new-card-description">
+              Описание
+            </label>
+
+            <textarea
+              id="new-card-description"
+              class="kanban__card-form-textarea"
+              maxlength="500"
+              placeholder="Добавь подробности"
+              [value]="newCardDescription()"
+              (input)="updateNewCardDescription($event)"
+            ></textarea>
+          } @else {
+            <section class="kanban__checklist-editor">
+              <div class="kanban__checklist-editor-header">
+                <span class="kanban__card-form-label">Чек-лист</span>
+
+                <span class="kanban__checklist-count">
+                {{ completedChecklistCount() }} из {{ newCardChecklist().length }}
+              </span>
+              </div>
+
+              @for (item of newCardChecklist(); track item.id) {
+                <div class="kanban__checklist-editor-item">
+                  <input
+                    type="checkbox"
+                    [checked]="item.completed"
+                    [attr.aria-label]="'Выполнено: ' + item.text"
+                    (change)="toggleChecklistItemInForm(item.id, $event)"
+                  />
+
+                  <input
+                    class="kanban__card-form-input kanban__checklist-editor-input"
+                    type="text"
+                    maxlength="200"
+                    placeholder="Название пункта"
+                    [value]="item.text"
+                    (input)="updateChecklistItemText(item.id, $event)"
+                  />
+
+                  <button
+                    class="kanban__checklist-remove"
+                    type="button"
+                    aria-label="Удалить пункт"
+                    title="Удалить пункт"
+                    (click)="removeChecklistItem(item.id)"
+                  >
+                    ×
+                  </button>
+                </div>
+              }
+
+              <div class="kanban__checklist-new-item">
+                <input
+                  class="kanban__card-form-input"
+                  type="text"
+                  maxlength="200"
+                  placeholder="Новый пункт списка"
+                  [value]="newChecklistItemText()"
+                  (input)="updateNewChecklistItemText($event)"
+                  (keydown.enter)="handleChecklistEnter($event)"
+                />
+
+                <button
+                  class="kanban__checklist-add-item"
+                  type="button"
+                  (click)="addChecklistItem()"
+                  [disabled]="newCardChecklist().length >= MAX_CHECKLIST_ITEMS"
+                >
+                  Добавить пункт
+                </button>
+
+                @if (newCardChecklist().length >= MAX_CHECKLIST_ITEMS) {
+                  <p class="kanban__checklist-limit">
+                    Достигнут лимит — максимум {{ MAX_CHECKLIST_ITEMS }} пунктов.
+                  </p>
+                }
+              </div>
+
+              @if (newCardChecklist().length === 0) {
+                <p class="kanban__checklist-empty">
+                  Добавь первый пункт чек-листа.
+                </p>
+              }
+            </section>
+          }
+
+          <label class="kanban__card-form-label" for="new-card-due-date">
+            Срок выполнения
+          </label>
+
+          <input
+            id="new-card-due-date"
+            class="kanban__card-form-input"
+            type="date"
+            [value]="newCardDueDate()"
+            (input)="updateNewCardDueDate($event)"
+          />
+
+          @if (newCardDueDate()) {
+            <button
+              class="kanban__card-form-delete"
+              type="button"
+              (click)="clearCardDueDate()"
+            >
+              Убрать дату
+            </button>
+          }
+
+          <label class="kanban__card-form-label" for="new-card-label">
+            Метка
+          </label>
+
+          <input
+            id="new-card-label"
+            class="kanban__card-form-input"
+            type="text"
+            maxlength="30"
+            placeholder="Например, Frontend"
+            [value]="newCardLabel()"
+            (input)="updateNewCardLabel($event)"
+          />
+
+          @if (newCardLabel().trim()) {
+            <label class="kanban__card-form-label" for="new-card-label-color">
+              Цвет метки
+            </label>
+
+            <select
+              id="new-card-label-color"
+              class="kanban__card-form-input"
+              [value]="newCardLabelColor()"
+              (change)="updateNewCardLabelColor($event)"
+            >
+              <option value="purple">Фиолетовый</option>
+              <option value="blue">Синий</option>
+              <option value="green">Зелёный</option>
+            </select>
+          }
+
+
+          @if (canAssign()) {
+            <div class="kanban__card-assignee">
+              <span class="kanban__card-form-label">Исполнитель</span>
+
+              @if (isAssigneeEditorVisible()) {
+                <select
+                  id="new-card-assignee"
+                  class="kanban__card-form-input"
+                  [value]="selectedAssigneeId() ?? ''"
+                  (change)="updateSelectedAssignee($event)"
+                >
+                  <option value="">Не назначен</option>
+
+                  @if (owner(); as boardOwner) {
+                    <option [value]="boardOwner.id">
+                      {{ boardOwner.name }} (владелец)
+                    </option>
+                  }
+
+                  @for (member of members(); track member.userId) {
+                    <option [value]="member.userId">
+                      {{ member.user.name }}
+                    </option>
+                  }
+                </select>
+
+                <div class="kanban__card-assignee-actions">
+                  <button
+                    class="kanban__card-form-save"
+                    type="button"
+                    (click)="finishAssigneeEdit()"
+                  >
+                    Готово
+                  </button>
+
+                  <button
+                    class="kanban__card-form-cancel"
+                    type="button"
+                    (click)="cancelAssigneeEdit()"
+                  >
+                    Отмена
+                  </button>
+                </div>
+              } @else {
+                @if (selectedAssigneeId()) {
+                  <div class="kanban__card-assignee-row">
+                    <div class="kanban__card-assignee-badge">
+            <span class="kanban__card-assignee-avatar">
+              {{ selectedAssigneeName().charAt(0).toUpperCase() }}
+            </span>
+
+                      <span class="kanban__card-assignee-name">
+              {{ selectedAssigneeName() }}
+            </span>
+                    </div>
+
+                    <button
+                      class="kanban__card-assignee-change"
+                      type="button"
+                      (click)="startAssigneeEdit()"
+                    >
+                      Изменить
+                    </button>
+                  </div>
+                } @else {
+                  <button
+                    class="kanban__card-assignee-change"
+                    type="button"
+                    (click)="startAssigneeEdit()"
+                  >
+                    <span aria-hidden="true">+</span>
+                    Назначить исполнителя
+                  </button>
+                }
+              }
+
+              <p class="kanban__card-form-hint">
+                * Назначить или изменить исполнителя может только владелец доски.
+              </p>
+            </div>
+          }
+        </div>
+
+        <footer class="kanban-modal__footer">
+          <button
+            class="kanban__card-form-cancel"
+            type="button"
+            (click)="cancelCardCreation()"
+          >
+            Отмена
+          </button>
+
+          <button
+            class="kanban__card-form-save"
+            type="button"
+            (click)="saveCard()"
+          >
+            {{ editingCardId() ? 'Сохранить' : 'Добавить' }}
+          </button>
+        </footer>
+      }
+
+      @if (editingCardId() && activeTab() === 'comments') {
+        <section class="kanban-modal__panel kanban-modal__comments">
+          @if (commentsError()) {
+            <p class="kanban-modal__panel-error" role="alert">{{ commentsError() }}</p>
+          }
+          @if (commentsLoading()) {
+            <p class="kanban-modal__empty">Загружаем комментарии…</p>
+          } @else if (comments().length === 0) {
+            <p class="kanban-modal__empty">Пока нет комментариев. Начни обсуждение!</p>
+          }
+          @for (comment of comments(); track comment.id) {
+            <article class="kanban-modal__comment">
+              <div class="kanban-modal__comment-avatar">{{ (comment.author.name || '?').charAt(0).toUpperCase() }}</div>
+              <div class="kanban-modal__comment-content">
+                <div class="kanban-modal__comment-meta"><strong>{{ comment.author.name }}</strong>
+                  <time>{{ formatActivityDate(comment.updatedAt || comment.createdAt) }}</time>
+                </div>
+                @if (editingCommentId() === comment.id) {
+                  <textarea class="kanban__card-form-textarea" maxlength="5000" [value]="editingCommentDraft()"
+                            (input)="editingCommentDraft.set($any($event.target).value)"></textarea>
+                  <div class="kanban-modal__comment-actions">
+                    <button type="button" class="kanban__card-form-cancel" (click)="cancelCommentEdit()">Отмена</button>
+                    <button type="button" class="kanban__card-form-save" [disabled]="commentActionId() === comment.id"
+                            (click)="saveCommentEdit(comment.id)">Сохранить
+                    </button>
+                  </div>
+                } @else {
+                  <p class="kanban-modal__comment-text">{{ comment.content }}</p>
+                  @if (comment.authorId === currentUserId()) {
+                    <div class="kanban-modal__comment-actions">
+                      <button type="button" class="kanban-modal__text-button" (click)="startCommentEdit(comment)">
+                        Изменить
+                      </button>
+                      <button type="button" class="kanban-modal__text-button kanban-modal__text-button--danger"
+                              [disabled]="commentActionId() === comment.id" (click)="deleteComment(comment.id)">Удалить
+                      </button>
+                    </div>
+                  }
+                }
+              </div>
+            </article>
+          }
+          <form class="kanban-modal__comment-form" (submit)="$event.preventDefault(); addComment()">
+            <label class="kanban__card-form-label" for="card-comment-draft">Новый комментарий</label>
+            <textarea id="card-comment-draft" class="kanban__card-form-textarea" maxlength="5000"
+                      placeholder="Напиши комментарий…" [value]="commentDraft()"
+                      (input)="commentDraft.set($any($event.target).value)"></textarea>
+            <div class="kanban-modal__comment-form-footer"><span>{{ commentDraft().length }}/5000</span>
+              <button type="submit" class="kanban__card-form-save"
+                      [disabled]="!commentDraft().trim() || commentSaving()">{{ commentSaving() ? 'Отправка…' : 'Отправить' }}
+              </button>
+            </div>
+          </form>
+        </section>
+      }
+
+      @if (editingCardId() && activeTab() === 'activity') {
+        <section class="kanban-modal__panel kanban-modal__activity">
+          @if (activityError()) {
+            <p class="kanban-modal__panel-error" role="alert">{{ activityError() }}</p>
+          }
+          @if (activityLoading()) {
+            <p class="kanban-modal__empty">Загружаем историю…</p>
+          } @else if (activities().length === 0) {
+            <p class="kanban-modal__empty">История пока пуста.</p>
+          }
+          @for (activity of activities(); track activity.id) {
+            <article class="kanban-modal__activity-item">
+              <span class="kanban-modal__activity-dot" aria-hidden="true"></span>
+              <div><p><strong>{{ activity.actorName }}</strong> {{ activityDescription(activity) }}</p>
+                <time>{{ formatActivityDate(activity.createdAt) }}</time>
+              </div>
+            </article>
+          }
+        </section>
+      }
+      @if (commentToDeleteId()) {
+        <div
+          class="kanban-modal__confirm-overlay"
+          (click)="cancelDeleteComment()"
+        >
+          <section
+            class="kanban-modal__confirm-dialog"
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="delete-comment-title"
+            aria-describedby="delete-comment-description"
+            (click)="$event.stopPropagation()"
+          >
+            <div class="kanban-modal__confirm-icon" aria-hidden="true">
+              !
+            </div>
+
+            <h3
+              class="kanban-modal__confirm-title"
+              id="delete-comment-title"
+            >
+              Удалить комментарий?
+            </h3>
+
+            <p
+              class="kanban-modal__confirm-description"
+              id="delete-comment-description"
+            >
+              Комментарий будет удалён без возможности восстановления.
+            </p>
+
+            <div class="kanban-modal__confirm-actions">
+              <button
+                type="button"
+                class="kanban__card-form-cancel"
+                [disabled]="!!commentActionId()"
+                (click)="cancelDeleteComment()"
+              >
+                Отмена
+              </button>
+
+              <button
+                type="button"
+                class="kanban-modal__confirm-delete"
+                [disabled]="!!commentActionId()"
+                (click)="confirmDeleteComment()"
+              >
+                {{ commentActionId() ? 'Удаление…' : 'Удалить' }}
+              </button>
+            </div>
+          </section>
+        </div>
+      }
+    </section>
+  </div>
+}

@@ -1,0 +1,457 @@
+<header class="header">
+  <nav class="header__nav">
+    <a class="header__logo" href="/" aria-label="На главную" (click)="openBoardsList($event)"
+       >
+      <span class="header__logo-name">Kanban</span>
+    </a>
+
+    <div class="header__search-wrapper">
+      <label class="header__search">
+        <span class="header__search-icon" aria-hidden="true">⌕</span>
+
+        <input
+          #searchInput
+          type="search"
+          placeholder="Поиск карточки во всех досках..."
+          aria-label="Поиск по доскам и карточкам"
+          autocomplete="off"
+          [value]="searchQuery()"
+          [attr.aria-expanded]="searchOpen()"
+          aria-controls="kanban-search-results"
+          (input)="onSearchInput($any($event.target).value)"
+          (focus)="focusSearch()"
+          (keydown)="onSearchKeydown($event)"
+        />
+
+        <kbd class="header__search-shortcut">Ctrl K</kbd>
+      </label>
+
+      @if (searchOpen() && searchQuery().trim().length >= 2) {
+        <div
+          class="header__search-results"
+          id="kanban-search-results"
+          role="listbox"
+          aria-label="Результаты поиска"
+        >
+          @if (searchLoading()) {
+            <div class="header__search-status">Ищем совпадения...</div>
+          } @else if (searchError()) {
+            <div class="header__search-status">
+              Не удалось выполнить поиск. Попробуй ещё раз.
+            </div>
+          } @else if (searchResults().length === 0) {
+            <div class="header__search-status">Ничего не найдено</div>
+          } @else {
+            <div class="header__search-heading">
+              Найдено: {{ searchResults().length }}
+            </div>
+
+            @for (result of searchResults(); track result.cardId) {
+              <button
+                class="header__search-result"
+                type="button"
+                role="option"
+                (click)="openSearchResult(result)"
+              >
+                <span class="header__search-result-icon" aria-hidden="true">▦</span>
+
+                <span class="header__search-result-content">
+                  <strong>{{ result.cardTitle }}</strong>
+
+                  @if (result.cardDescription) {
+                    <small>{{ result.cardDescription }}</small>
+                  }
+
+                  <span class="header__search-result-column">
+                    {{ result.columnTitle }}
+                  </span>
+                </span>
+
+                @if (result.boardId !== activeBoardId()) {
+                  <span class="header__search-board-badge">
+                    {{ result.boardTitle }}
+                  </span>
+                }
+              </button>
+            }
+          }
+        </div>
+      }
+    </div>
+
+    <div class="header__actions">
+      <div class="header__notifications-wrapper">
+        <button
+          class="header__icon-button header__notification-trigger"
+          type="button"
+          aria-label="Уведомления и приглашения"
+          title="Уведомления и приглашения"
+          [attr.aria-expanded]="notificationsOpen()"
+          aria-controls="header-notifications-menu"
+          (click)="$event.stopPropagation(); toggleNotifications()"
+        >
+          <svg
+            class="header__bell-icon"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/>
+            <path d="M10 21h4"/>
+          </svg>
+
+          @if (totalBadgeCount() > 0) {
+            <span class="header__notification-badge">
+              {{ totalBadgeCount() > 99 ? '99+' : totalBadgeCount() }}
+            </span>
+          }
+        </button>
+
+        @if (notificationsOpen()) {
+          <section
+            class="header__notifications-menu"
+            id="header-notifications-menu"
+            aria-label="Уведомления и приглашения"
+            (click)="$event.stopPropagation()"
+          >
+            <div class="header__notifications-heading">
+              <div>
+                <h2>Уведомления</h2>
+                <p>
+                  {{ totalBadgeCount() }} новых
+                </p>
+              </div>
+
+              <button
+                class="header__notifications-close"
+                type="button"
+                aria-label="Закрыть уведомления"
+                (click)="closeNotifications()"
+              >
+                ×
+              </button>
+            </div>
+
+            <div class="header__notification-tabs">
+              <button
+                type="button"
+                [class.header__notification-tab--active]="notificationTab() === 'all'"
+                (click)="setNotificationTab('all')"
+              >
+                Все
+              </button>
+
+              <button
+                type="button"
+                [class.header__notification-tab--active]="notificationTab() === 'notifications'"
+                (click)="setNotificationTab('notifications')"
+              >
+                Назначения
+                @if (notificationService.unreadCount() > 0) {
+                  <span>{{ notificationService.unreadCount() }}</span>
+                }
+              </button>
+
+              <button
+                type="button"
+                [class.header__notification-tab--active]="notificationTab() === 'invitations'"
+                (click)="setNotificationTab('invitations')"
+              >
+                Приглашения
+                @if (pendingInvitationsCount() > 0) {
+                  <span>{{ pendingInvitationsCount() }}</span>
+                }
+              </button>
+            </div>
+
+            <div class="header__notifications-list">
+              @if (notificationTab() === 'all' ||
+              notificationTab() === 'notifications') {
+                @if (notificationService.loading()) {
+                  <div class="header__notifications-status">
+                    Загружаем уведомления...
+                  </div>
+                } @else if (notificationService.error()) {
+                  <div class="header__notifications-status">
+                    Не удалось загрузить уведомления.
+                    <button type="button" (click)="refreshNotifications()">
+                      Повторить
+                    </button>
+                  </div>
+                } @else {
+                  @if (notificationService.notifications().length > 0) {
+                    @for (notification of notificationService.notifications(); track notification.id) {
+                      <div
+                        class="header__notification-item"
+                        [class.header__notification-item--unread]="!notification.readAt"
+                      >
+                        <button
+                          class="header__notification-open"
+                          type="button"
+                          (click)="openNotification(notification)"
+                        >
+      <span class="header__notification-item-icon" aria-hidden="true">
+        {{ notification.type === 'CARD_ASSIGNED' ? '↗' : '↩' }}
+      </span>
+
+                          <span class="header__notification-item-content">
+        <strong>{{ notification.cardTitle }}</strong>
+        <span>{{ notification.message }}</span>
+        <small>
+          {{ notification.boardTitle }} ·
+          {{ formatNotificationDate(notification.createdAt) }}
+        </small>
+      </span>
+
+                          @if (!notification.readAt) {
+                            <span
+                              class="header__notification-unread-dot"
+                              aria-label="Не прочитано"
+                            ></span>
+                          }
+                        </button>
+
+                        <button
+                          class="header__notification-delete"
+                          type="button"
+                          aria-label="Удалить уведомление"
+                          title="Удалить уведомление"
+                          [disabled]="
+        deletingNotificationId() !== null ||
+        deletingAllNotifications()
+      "
+                          (click)="deleteNotification(notification.id)"
+                        >
+                          @if (deletingNotificationId() === notification.id) {
+                            …
+                          } @else {
+                            ×
+                          }
+                        </button>
+                      </div>
+                    }
+                  } @else if (notificationTab() === 'notifications') {
+                    <div class="header__notifications-empty">
+                      Пока нет уведомлений
+                    </div>
+                  }
+                }
+
+                @if (notificationTab() === 'all' &&
+                pendingInvitationsCount() > 0) {
+                  <div class="header__notifications-section-title">
+                    Приглашения на доски
+                  </div>
+                }
+              }
+
+              @if (notificationTab() === 'all' ||
+              notificationTab() === 'invitations') {
+                @if (invitationsLoading()) {
+                  <div class="header__notifications-status">
+                    Загружаем приглашения...
+                  </div>
+                } @else if (invitationsError()) {
+                  <div class="header__notifications-status">
+                    Не удалось загрузить приглашения.
+                    <button type="button" (click)="refreshInvitations()">
+                      Повторить
+                    </button>
+                  </div>
+                } @else {
+                  @for (invitation of pendingInvitations();
+                    track invitation.id) {
+                    <div class="header__invitation-item">
+                      <span class="header__invitation-icon" aria-hidden="true">
+                        ▦
+                      </span>
+
+                      <div class="header__invitation-content">
+                        <strong>
+                          {{ invitation.board.title }}
+                        </strong>
+                        <span>
+                           {{ invitation.invitedBy.name }}
+                          приглашает присоединиться
+                        </span>
+                        <small>
+                          {{ formatNotificationDate(invitation.createdAt) }}
+                        </small>
+
+                        <div class="header__invitation-actions">
+                          <button
+                            type="button"
+                            class="header__invitation-accept"
+                            [disabled]="respondingInvitationId() === invitation.id"
+                            (click)="respondToInvitation(invitation.id, 'accept')"
+                          >
+                            Принять
+                          </button>
+
+                          <button
+                            type="button"
+                            class="header__invitation-decline"
+                            [disabled]="respondingInvitationId() === invitation.id"
+                            (click)="respondToInvitation(invitation.id, 'decline')"
+                          >
+                            Отклонить
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  } @empty {
+                    @if (notificationTab() === 'invitations') {
+                      <div class="header__notifications-empty">
+                        Нет ожидающих приглашений
+                      </div>
+                    }
+                  }
+                }
+              }
+
+              @if (notificationTab() === 'all' &&
+              notificationService.notifications().length === 0 &&
+              pendingInvitationsCount() === 0 &&
+              !notificationService.loading() &&
+              !invitationsLoading()) {
+                <div class="header__notifications-empty">
+                  Всё просмотрено. Новых уведомлений нет.
+                </div>
+              }
+            </div>
+
+            @if (notificationService.unreadCount() > 0 ||
+            notificationService.notifications().length > 0) {
+              <div class="header__notifications-footer">
+                @if (notificationService.unreadCount() > 0) {
+                  <button
+                    class="header__notifications-mark-read"
+                    type="button"
+                    (click)="markAllNotificationsAsRead()"
+                  >
+                    Отметить все прочитанными
+                  </button>
+                }
+
+                @if (notificationService.notifications().length > 0) {
+                  <button
+                    class="header__notifications-delete-all"
+                    type="button"
+                    [disabled]="
+          deletingAllNotifications() ||
+          deletingNotificationId() !== null
+        "
+                    (click)="deleteAllNotifications()"
+                  >
+                    {{
+                      deletingAllNotifications()
+                        ? 'Удаление…'
+                        : 'Удалить все уведомления'
+                    }}
+                  </button>
+                }
+
+                @if (notificationDeleteError()) {
+                  <p class="header__notifications-error" role="alert">
+                    Не удалось удалить уведомление. Попробуйте ещё раз.
+                  </p>
+                }
+              </div>
+            }
+          </section>
+        }
+      </div>
+
+      <div class="header__account-wrapper">
+        <button
+          class="header__account"
+          type="button"
+          aria-label="Открыть меню аккаунта"
+          [attr.aria-expanded]="accountMenuOpen()"
+          (click)="$event.stopPropagation(); toggleAccountMenu()"
+        >
+          <span class="header__account-name">
+            {{ authService.user()?.name ?? 'Пользователь' }}
+          </span>
+
+          <span
+            class="header__account-chevron"
+            [class.header__account-chevron--open]="accountMenuOpen()"
+          >⌄</span>
+        </button>
+
+        @if (accountMenuOpen()) {
+          <div
+            class="header__account-menu"
+            (click)="$event.stopPropagation()"
+          >
+            <button
+              class="header__account-menu-item"
+              type="button"
+              (click)="logout()"
+            >
+              <span class="header__account-menu-icon">↪</span>
+              Выйти из аккаунта
+            </button>
+          </div>
+        }
+      </div>
+    </div>
+  </nav>
+
+</header>
+
+@if (showDeleteAllConfirm()) {
+  <div
+    class="header__confirm-overlay"
+    (click)="closeDeleteAllConfirm()"
+  >
+    <section
+      class="header__confirm-modal"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="delete-notifications-title"
+      aria-describedby="delete-notifications-description"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="header__confirm-icon" aria-hidden="true">!</div>
+
+      <h2 id="delete-notifications-title">
+        Удалить все уведомления?
+      </h2>
+
+      <p id="delete-notifications-description">
+        Все уведомления будут удалены без возможности восстановления.
+        Приглашения на доски останутся нетронутыми.
+      </p>
+
+      <div class="header__confirm-actions">
+        <button
+          class="header__confirm-cancel"
+          type="button"
+          [disabled]="deletingAllNotifications()"
+          (click)="closeDeleteAllConfirm()"
+        >
+          Отмена
+        </button>
+
+        <button
+          class="header__confirm-delete"
+          type="button"
+          [disabled]="deletingAllNotifications()"
+          (click)="confirmDeleteAllNotifications()"
+        >
+          {{
+            deletingAllNotifications()
+              ? 'Удаление…'
+              : 'Удалить'
+          }}
+        </button>
+      </div>
+    </section>
+  </div>
+}
